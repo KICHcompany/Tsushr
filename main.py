@@ -7,7 +7,7 @@ from playwright_scraper import run_bot
 def install_playwright_browsers():
     try:
         print("📦 Установка браузеров Playwright...")
-        subprocess.run(["playwright", "install", "--with-deps"], check=True)
+        subprocess.run(["playwright", "install"], check=True)
         print("✅ Браузеры установлены")
     except Exception as e:
         print(f"❌ Ошибка установки браузеров: {e}")
