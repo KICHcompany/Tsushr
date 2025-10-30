@@ -1,4 +1,6 @@
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from config import EMAIL, PASSWORD
 import time
 
@@ -6,75 +8,70 @@ def run_bot():
     print("🔄 run_bot() стартовал")
 
     try:
-        with sync_playwright() as p:
-            print("🧠 Playwright запущен")
-            browser = p.chromium.launch(headless=True)
-            print("🌐 Chromium запущен")
-            context = browser.new_context()
-            page = context.new_page()
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
 
-            def safe_goto(url, retries=3):
-                for i in range(retries):
-                    try:
-                        print(f"🌐 Переход на: {url}")
-                        page.goto(url, timeout=5000)
-                        return
-                    except Exception as e:
-                        print(f"⚠️ Ошибка загрузки ({i+1}/{retries}): {e}")
-                        page.reload()
-                        time.sleep(2)
+        driver = webdriver.Chrome(options=options)
+        driver.set_page_load_timeout(10)
 
-            # 🔐 Авторизация
-            safe_goto("https://sales.ft.org.ua")
-            page.click("a[href='https://sales.ft.org.ua/cabinet/dashboard']")
-            safe_goto("https://sales.ft.org.ua/cabinet/login")
+        def safe_get(url):
+            try:
+                print(f"🌐 Переход на: {url}")
+                driver.get(url)
+            except Exception as e:
+                print(f"⚠️ Ошибка загрузки: {e}")
+                driver.refresh()
 
-            print("✍️ Ввод логина и пароля...")
-            page.fill("input[name='email']", EMAIL)
-            page.fill("input[name='password']", PASSWORD)
-            page.click("button[type='submit']")
-            page.wait_for_url("https://sales.ft.org.ua/cabinet/profile")
-            print("✅ Авторизация успешна!")
+        # 🔐 Авторизация
+        safe_get("https://sales.ft.org.ua")
+        driver.find_element(By.CSS_SELECTOR, "a[href='https://sales.ft.org.ua/cabinet/dashboard']").click()
+        safe_get("https://sales.ft.org.ua/cabinet/login")
 
-            # 🎭 Переход к афише основной сцены
-            page.goto("https://sales.ft.org.ua/events?hall=main")
-            print("🎭 Открыта афиша основной сцены")
+        print("✍️ Ввод логина и пароля...")
+        driver.find_element(By.NAME, "email").send_keys(EMAIL)
+        driver.find_element(By.NAME, "password").send_keys(PASSWORD)
+        driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+        time.sleep(2)
+        print("✅ Авторизация успешна!")
 
-            # 🔍 Получение списка спектаклей
-            performances = page.query_selector_all(".performanceCard__title")
-            print(f"🔎 Найдено спектаклей: {len(performances)}")
+        # 🎭 Афиша основной сцены
+        safe_get("https://sales.ft.org.ua/events?hall=main")
+        print("🎭 Открыта афиша основной сцены")
 
-            for i, perf in enumerate(performances):
-                title = perf.inner_text()
-                print(f"\n➡️ [{i+1}] Спектакль: {title}")
+        performances = driver.find_elements(By.CLASS_NAME, "performanceCard__title")
+        print(f"🔎 Найдено спектаклей: {len(performances)}")
 
-                try:
-                    perf.click()
-                    page.wait_for_load_state("domcontentloaded")
-                    print("📄 Открыта страница спектакля")
+        for i, perf in enumerate(performances):
+            title = perf.text
+            print(f"\n➡️ [{i+1}] Спектакль: {title}")
+            try:
+                perf.click()
+                time.sleep(2)
+                print("📄 Открыта страница спектакля")
 
-                    date_buttons = page.query_selector_all(".seatsAreOver__btn")
-                    print(f"📅 Доступных дат: {len(date_buttons)}")
+                date_buttons = driver.find_elements(By.CLASS_NAME, "seatsAreOver__btn")
+                print(f"📅 Доступных дат: {len(date_buttons)}")
 
-                    for btn in date_buttons:
-                        date_text = btn.inner_text()
-                        href = btn.get_attribute("href")
-                        print(f"🕓 Дата: {date_text} → {href}")
-                        page.goto(href)
-                        page.wait_for_load_state("domcontentloaded")
-                        print("🪑 Проверка мест... (заглушка)")
-                        time.sleep(1)
-
-                    page.goto("https://sales.ft.org.ua/events?hall=main")
+                for btn in date_buttons:
+                    date_text = btn.text
+                    href = btn.get_attribute("href")
+                    print(f"🕓 Дата: {date_text} → {href}")
+                    safe_get(href)
+                    print("🪑 Проверка мест... (заглушка)")
                     time.sleep(1)
 
-                except Exception as e:
-                    print(f"❌ Ошибка при переходе: {e}")
-                    page.goto("https://sales.ft.org.ua/events?hall=main")
-                    time.sleep(1)
+                safe_get("https://sales.ft.org.ua/events?hall=main")
+                time.sleep(1)
 
-            print("\n✅ Цикл завершён. Ожидание перед следующим запуском...")
-            browser.close()
+            except Exception as e:
+                print(f"❌ Ошибка при переходе: {e}")
+                safe_get("https://sales.ft.org.ua/events?hall=main")
+                time.sleep(1)
+
+        print("\n✅ Цикл завершён. Ожидание перед следующим запуском...")
+        driver.quit()
 
     except Exception as e:
-        print(f"❌ Ошибка в run_bot: {e}")
+        print(f"❌ run_bot упал: {e}")
