@@ -77,6 +77,25 @@ def run_bot():
                 # Возврат к афише
                 page.goto("https://sales.ft.org.ua/events?hall=main")
                 time.sleep(1)
+                def run_bot():
+    print("🔄 run_bot() стартовал")
+
+    try:
+        from playwright.sync_api import sync_playwright
+        print("✅ Импорт playwright прошёл")
+
+        with sync_playwright() as p:
+            print("🧠 Playwright запущен")
+            browser = p.chromium.launch(headless=True)
+            print("🌐 Chromium запущен")
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto("https://example.com")
+            print("✅ Перешёл на example.com")
+            browser.close()
+
+    except Exception as e:
+        print(f"❌ Ошибка в run_bot: {e}")
 
             except Exception as e:
                 print(f"❌ Ошибка при переходе: {e}")
