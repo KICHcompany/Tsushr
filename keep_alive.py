@@ -13,7 +13,7 @@ def home():
 def ping_self():
     ping_url = os.environ.get("PING_URL")
     if not ping_url:
-        print("PING_URL not set in environment variables.")
+        print("PING_URL not set.")
         return
     while True:
         try:
@@ -21,9 +21,9 @@ def ping_self():
             print(f"Pinged {ping_url}")
         except Exception as e:
             print(f"Ping failed: {e}")
-        time.sleep(600)  # каждые 10 минут
+        time.sleep(600)
 
 def start_server():
     threading.Thread(target=ping_self, daemon=True).start()
-    port = int(os.environ.get("PORT", 10000))  # Render требует PORT из env
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
