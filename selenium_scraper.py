@@ -1,3 +1,4 @@
+import chromedriver_autoinstaller
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -8,6 +9,8 @@ def run_bot():
     print("🔄 run_bot() стартовал")
 
     try:
+        chromedriver_autoinstaller.install()  # ✅ Автоматическая установка chromedriver
+
         options = Options()
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
